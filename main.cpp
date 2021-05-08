@@ -1,0 +1,27 @@
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
+#include "level.h"
+
+int main(int argc, char *argv[])
+{
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
+
+    QGuiApplication app(argc, argv);
+
+    qmlRegisterType<BallInfo>("ballInfo", 1, 0, "BallInfo");
+    qmlRegisterType<GoalInfo>("goalInfo", 1, 0, "GoalInfo");
+    qmlRegisterType<Level>("level", 1, 0, "Level");
+
+    QQmlApplicationEngine engine;
+    const QUrl url(QStringLiteral("qrc:/main.qml"));
+    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
+                     &app, [url](QObject *obj, const QUrl &objUrl) {
+        if (!obj && url == objUrl)
+            QCoreApplication::exit(-1);
+    }, Qt::QueuedConnection);
+    engine.load(url);
+
+    return app.exec();
+}
