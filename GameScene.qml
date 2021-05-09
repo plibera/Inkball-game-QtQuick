@@ -93,11 +93,61 @@ Rectangle {
         }
     }
 
+    //Segments
+    Repeater {
+        id: segments
+        model: gameScene.level.segments.length
+        Rectangle {
+            width: 3
+            height: level.segments[index].length*gameScene.width/20
+            transform: Rotation {
+                origin.x: parent.x
+                origin.y: parent.y
+                angle: -1*level.segments[index].angle - 90
+            }
+            color: "#505050"
+            x: level.segments[index].p1.x*gameScene.width/20
+            y: level.segments[index].p1.y*gameScene.height/20
+        }
+    }
+
+    //Active Segment
+    Rectangle {
+        width: 3
+        height: level.activeSegment.length*gameScene.width/20
+        transform: Rotation {
+            origin.x: parent.x
+            origin.y: parent.y
+            angle: -1*level.activeSegment.angle - 90
+        }
+        color: level.segmentStarted ? "#707070" : "transparent"
+        x: level.activeSegment.p1.x*gameScene.width/20
+        y: level.activeSegment.p1.y*gameScene.height/20
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        onPressed: {
+            var point = Qt.point(mouseX*20/gameScene.width, mouseY*20/gameScene.height)
+            level.startActiveSegment(point)
+        }
+
+        onPositionChanged: {
+            var point = Qt.point(mouseX*20/gameScene.width, mouseY*20/gameScene.height)
+            level.updateActiveSegment(point)
+        }
+
+        onReleased: {
+            level.finishActiveSegment()
+        }
+    }
+
 
     Timer
     {
-        interval: 30;
-        running: true;
+        interval: 30
+        running: level.gameState == 1
         repeat: true
         onTriggered: gameScene.level.updatePositions()
     }

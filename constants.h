@@ -9,7 +9,7 @@
 #define SCENE_W 800
 #define SCENE_H 800
 
-#define BALL_D 30
+#define BALL_D 1
 
 #define GRID_W 20
 #define GRID_H 20

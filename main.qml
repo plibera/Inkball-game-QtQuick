@@ -21,6 +21,25 @@ Window {
             id: gameScene
             level: currentLevel
             width: gameWindow.width < gameWindow.height-buttonRow.height ? gameWindow.width : gameWindow.height-buttonRow.height
+
+            GameInfo {
+                color: active ? "red" : "transparent"
+                active: currentLevel.gameState == 3
+                msg: "Game Over"
+            }
+
+            GameInfo {
+                color: active ? "#40ff40" : "transparent"
+                active: currentLevel.gameState == 2
+                msg: "Game Won!"
+            }
+
+            GameInfo {
+                color: active ? "#707070" : "transparent"
+                opacity: 0.8
+                active: currentLevel.gameState == 0
+                msg: "Level "+(currentLevel.levelId+1)
+            }
         }
 
         ButtonGroup {
@@ -29,11 +48,12 @@ Window {
 
         Row {
             id: buttonRow
+            spacing: 5
 
             Button {
                 text: "Previous Level"
                 height: 30
-                width: gameScene.width/3
+                width: gameScene.width/4 - 3*parent.spacing/4
                 onClicked: {
                     currentLevel.prevLevel()
                 }
@@ -42,7 +62,7 @@ Window {
             Button {
                 text: "Next Level"
                 height: 30
-                width: gameScene.width/3
+                width: gameScene.width/4  - 3*parent.spacing/4
                 onClicked: {
                     currentLevel.nextLevel()
                 }
@@ -51,10 +71,21 @@ Window {
             Button {
                 text: "Reset Level"
                 height: 30
-                width: gameScene.width/3
+                width: gameScene.width/4  - 3*parent.spacing/4
                 onClicked: {
                     currentLevel.nextLevel()
                     currentLevel.prevLevel()
+                }
+            }
+
+            Button {
+                text: "Play Level"
+                height: 30
+                width: gameScene.width/4  - 3*parent.spacing/4
+                onClicked: {
+                    currentLevel.nextLevel()
+                    currentLevel.prevLevel()
+                    currentLevel.setGameState(1)
                 }
             }
         }

@@ -3,5 +3,6 @@
         <file>main.qml</file>
         <file>levels.txt</file>
         <file>GameScene.qml</file>
+        <file>GameInfo.qml</file>
     </qresource>
 </RCC>

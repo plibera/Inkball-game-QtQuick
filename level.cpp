@@ -78,6 +78,44 @@ void GoalInfo::setColor(QColor color)
 }
 
 
+void Segment::setP1(QPointF p1)
+{
+    if(p1 == m_p1)
+        return;
+    m_p1 = p1;
+    QLineF line(m_p1, m_p2);
+    m_angle = line.angle();
+    m_length = line.length();
+    emit p1Changed();
+    emit angleChanged();
+    emit lengthChanged();
+}
+
+void Segment::setP2(QPointF p2)
+{
+    if(p2 == m_p2)
+        return;
+    m_p2 = p2;
+    QLineF line(m_p1, m_p2);
+    m_angle = line.angle();
+    m_length = line.length();
+    emit p2Changed();
+    emit angleChanged();
+    emit lengthChanged();
+}
+
+bool Segment::operator==(Segment& other)
+{
+    QLineF line1(m_p1, m_p2);
+    QLineF line2(other.p1(), other.p2());
+    return line1 == line2;
+}
+
+
+
+
+
+
 
 Level::Level()
 {
@@ -98,6 +136,7 @@ Level::Level()
         levels.pop_back();
     fromString(levels[0].toStdString());
     m_levelId = 0;
+    m_activeSegment = new Segment(this);
 }
 
 
@@ -125,6 +164,14 @@ void Level::setGoals(QList<GoalInfo*> goals)
     emit goalsChanged();
 }
 
+void Level::setSegments(QList<Segment*> segments)
+{
+    if(m_segments == segments)
+        return;
+    m_segments = segments;
+    emit segmentsChanged();
+}
+
 void Level::setLevelId(int levelId)
 {
     if(levelId == m_levelId)
@@ -146,6 +193,30 @@ void Level::setGridSize(QPair<int, int> gridSize)
     emit gridSizeChanged();
 }
 
+void Level::setActiveSegment(Segment* activeSegment)
+{
+    if(m_activeSegment == activeSegment)
+        return;
+    m_activeSegment = activeSegment;
+    emit activeSegmentChanged();
+}
+
+void Level::setSegmentStarted(bool segmentStarted)
+{
+    if(m_segmentStarted == segmentStarted)
+        return;
+    m_segmentStarted = segmentStarted;
+    emit segmentStartedChanged();
+}
+
+void Level::setGameState(int gameState)
+{
+    if(gameState == m_gameState)
+        return;
+    m_gameState = gameState;
+    emit gameStateChanged();
+}
+
 void Level::nextLevel()
 {
     setLevelId(m_levelId+1);
@@ -156,9 +227,47 @@ void Level::prevLevel()
     setLevelId(m_levelId-1);
 }
 
+void Level::updateActiveSegment(QPointF point)
+{
+    if(!m_segmentStarted)
+        return;
+
+    QLineF line(activeSegment()->p1(), point);
+    qreal angle = line.angle();
+    angle = 45*round(angle/45);
+    if(angle >= 360)
+        angle -= 360;
+    angle *= M_PI/180;
+    qreal length = line.length();
+    QPointF point2(length*cos(angle), -1*length*sin(angle));
+    line.setP2(activeSegment()->p1() + point2);
+    m_activeSegment->setP2(line.p2());
+    emit activeSegmentChanged();
+}
+
+void Level::startActiveSegment(QPointF point)
+{
+    m_activeSegment->setP1(point);
+    m_activeSegment->setP2(point);
+    setSegmentStarted(true);
+    emit activeSegmentChanged();
+}
+
+void Level::finishActiveSegment()
+{
+    setSegmentStarted(false);
+    Segment* segment = new Segment(this);
+    segment->setP1(m_activeSegment->p1());
+    segment->setP2(m_activeSegment->p2());
+    m_segments.push_back(segment);
+    emit segmentsChanged();
+}
+
+
 void Level::updatePositions()
 {
     qreal dist = 0.2;
+    QList<BallInfo*> ballsToRemove;
 
     for(auto &ball : m_balls)
     {
@@ -173,79 +282,75 @@ void Level::updatePositions()
         futurePos.setX(ball->pos().x()+dist*ball->stepX);
         futurePos.setY(ball->pos().y()+dist*ball->stepY);
         ball->setPos(futurePos);
+
+        for(Segment* segment : m_segments)
+        {
+            QPointF segmentOffset(-0.5, -0.5);
+            QLineF testSegment(segment->p1()+segmentOffset, segment->p2()+segmentOffset);
+            int direction = int(round(segment->angle()/45))%4;
+            if(direction%2 == 0)
+            {
+                QLineF testLine(QPointF(futurePos.x(), futurePos.y()-(double)BALL_D/2), QPointF(futurePos.x(), futurePos.y()+(double)BALL_D/2));
+                QLineF testLine2(QPointF(futurePos.x()-(double)BALL_D/2, futurePos.y()), QPointF(futurePos.x()+(double)BALL_D/2, futurePos.y()));
+                QLineF::IntersectionType type = testLine.intersects(testSegment, nullptr);
+                QLineF::IntersectionType type2 = testLine2.intersects(testSegment, nullptr);
+                if(type == QLineF::BoundedIntersection || type2 == QLineF::BoundedIntersection)
+                {
+                    ball->setAngle(ball->angle()+M_PI);
+                    m_segments.removeOne(segment);
+                    delete segment;
+                    emit segmentsChanged();
+                    break;
+                }
+            }
+            else
+            {
+                qreal offset = (double)BALL_D/(2*sqrt(2));
+                QLineF testLine(QPointF(futurePos.x()-offset, futurePos.y()-offset), QPointF(futurePos.x()+offset, futurePos.y()+offset));
+                QLineF testLine2(QPointF(futurePos.x()-offset, futurePos.y()+offset), QPointF(futurePos.x()+offset, futurePos.y()-offset));
+                QLineF::IntersectionType type = testLine.intersects(testSegment, nullptr);
+                QLineF::IntersectionType type2 = testLine2.intersects(testSegment, nullptr);
+                if(type == QLineF::BoundedIntersection || type2 == QLineF::BoundedIntersection)
+                {
+                    if((direction == 1 && ball->stepY == 0) || (direction == 3 && ball->stepX == 0))
+                        ball->setAngle(ball->angle()-M_PI/2);
+                    else
+                        ball->setAngle(ball->angle()+M_PI/2);
+                    m_segments.removeOne(segment);
+                    delete segment;
+                    emit segmentsChanged();
+                    break;
+                }
+            }
+        }
+
+        for(GoalInfo* goal : m_goals)
+        {
+            QLineF testLine(goal->pos(), ball->pos());
+            if(testLine.length() < (double)BALL_D/2)
+            {
+                if(goal->color() != ball->color())
+                {
+                    setGameState(3);
+                    ballsToRemove = m_balls;
+                    break;
+                }
+                else if(m_balls.size() == 1)
+                {
+                    setGameState(2);
+                    ballsToRemove = m_balls;
+                    break;
+                }
+                ballsToRemove.push_back(ball);
+            }
+        }
     }
-
-
-
-
-
-
-    /*for(Segment* segment : inkBallScene->segments)
+    for(auto &ball : ballsToRemove)
     {
-        if(segment->getColor() != segmentColor)
-            continue;
-        int direction = int(round(segment->getSegment().angle()/45))%4;
-        if(direction%2 == 0)
-        {
-            QLineF testLine(QPointF(futurePos.x(), futurePos.y()-BALL_D/2), QPointF(futurePos.x(), futurePos.y()+BALL_D/2));
-            QLineF testLine2(QPointF(futurePos.x()-BALL_D/2, futurePos.y()), QPointF(futurePos.x()+BALL_D/2, futurePos.y()));
-            QLineF::IntersectionType type = testLine.intersects(segment->getSegment(), nullptr);
-            QLineF::IntersectionType type2 = testLine2.intersects(segment->getSegment(), nullptr);
-            if(type == QLineF::BoundedIntersection || type2 == QLineF::BoundedIntersection)
-            {
-                setAngle(angle+M_PI);
-                inkBallScene->removeItem(segment);
-                inkBallScene->segments.removeOne(segment);
-                delete segment;
-                inkBallScene->update();
-                break;
-            }
-        }
-        else
-        {
-            qreal offset = BALL_D/(2*sqrt(2));
-            QLineF testLine(QPointF(futurePos.x()-offset, futurePos.y()-offset), QPointF(futurePos.x()+offset, futurePos.y()+offset));
-            QLineF testLine2(QPointF(futurePos.x()-offset, futurePos.y()+offset), QPointF(futurePos.x()+offset, futurePos.y()-offset));
-            QLineF::IntersectionType type = testLine.intersects(segment->getSegment(), nullptr);
-            QLineF::IntersectionType type2 = testLine2.intersects(segment->getSegment(), nullptr);
-            if(type == QLineF::BoundedIntersection || type2 == QLineF::BoundedIntersection)
-            {
-                if((direction == 1 && stepY == 0) || (direction == 3 && stepX == 0))
-                    setAngle(angle-M_PI/2);
-                else
-                    setAngle(angle+M_PI/2);
-                inkBallScene->removeItem(segment);
-                inkBallScene->segments.removeOne(segment);
-                delete segment;
-                inkBallScene->update();
-                break;
-            }
-        }
-    }*/
-
-
-
-    /*for(Goal* goal : inkBallScene->goals)
-    {
-        QLineF testLine(goal->pos(), pos());
-        if(testLine.length() < BALL_D)
-        {
-            if(goal->getColor() != color)
-            {
-                emit inkBallScene->gameOver();
-                return;
-            }
-            else if(inkBallScene->balls.size() == 1 && inkBallScene->waitingBalls.size() == 0)
-            {
-                emit inkBallScene->gameWon(inkBallScene->getGameTime()/1000);
-                return;
-            }
-            inkBallScene->removeItem(this);
-            inkBallScene->balls.removeOne(this);
-            inkBallScene->update();
-            delete this;
-        }
-    }*/
+        m_balls.removeOne(ball);
+        delete ball;
+    }
+    emit ballsChanged();
 }
 
 
@@ -254,6 +359,7 @@ void Level::fromString(std::string levelInfo)
     m_obstacles.clear();
     m_goals.clear();
     m_balls.clear();
+    m_segments.clear();
     //scores.clear();
 
     stringstream ss;
@@ -351,6 +457,8 @@ void Level::fromString(std::string levelInfo)
     emit obstaclesChanged();
     emit ballsChanged();
     emit goalsChanged();
+    emit segmentsChanged();
+    setGameState(0);
     //sort(scores.begin(), scores.end());
 }
 
