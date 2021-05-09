@@ -5,10 +5,11 @@ import goalInfo 1.0
 import level 1.0
 import QtQuick.Controls 2.12
 
+
 Window {
     id: gameWindow
     width: 640
-    height: 670
+    height: 680
     visible: true
     title: qsTr("InkBall")
 
@@ -17,21 +18,26 @@ Window {
     }
 
     Column {
+        anchors.fill: parent
+        spacing: 5
         GameScene {
             id: gameScene
             level: currentLevel
-            width: gameWindow.width < gameWindow.height-buttonRow.height ? gameWindow.width : gameWindow.height-buttonRow.height
+            width: gameWindow.width < gameWindow.height-(buttonRow.height+2*buttonRow.spacing) ? gameWindow.width : gameWindow.height-(buttonRow.height+2*buttonRow.spacing)
+            anchors.horizontalCenter: parent.horizontalCenter
+            xOffset: (gameWindow.width-gameScene.width)/2
+            yOffset: 0
 
             GameInfo {
                 color: active ? "red" : "transparent"
                 active: currentLevel.gameState == 3
-                msg: "Game Over"
+                msg: "Game over!"
             }
 
             GameInfo {
                 color: active ? "#40ff40" : "transparent"
                 active: currentLevel.gameState == 2
-                msg: "Game Won!"
+                msg: "Game won in "+currentLevel.gameTime+" seconds!"
             }
 
             GameInfo {
@@ -49,11 +55,12 @@ Window {
         Row {
             id: buttonRow
             spacing: 5
+            anchors.horizontalCenter: parent.horizontalCenter
 
             Button {
                 text: "Previous Level"
                 height: 30
-                width: gameScene.width/4 - 3*parent.spacing/4
+                width: gameScene.width/(parent.children.length) - (parent.children.length-1)*parent.spacing/parent.children.length
                 onClicked: {
                     currentLevel.prevLevel()
                 }
@@ -62,7 +69,7 @@ Window {
             Button {
                 text: "Next Level"
                 height: 30
-                width: gameScene.width/4  - 3*parent.spacing/4
+                width: gameScene.width/(parent.children.length) - (parent.children.length-1)*parent.spacing/parent.children.length
                 onClicked: {
                     currentLevel.nextLevel()
                 }
@@ -71,7 +78,7 @@ Window {
             Button {
                 text: "Reset Level"
                 height: 30
-                width: gameScene.width/4  - 3*parent.spacing/4
+                width: gameScene.width/(parent.children.length) - (parent.children.length-1)*parent.spacing/parent.children.length
                 onClicked: {
                     currentLevel.nextLevel()
                     currentLevel.prevLevel()
@@ -81,7 +88,7 @@ Window {
             Button {
                 text: "Play Level"
                 height: 30
-                width: gameScene.width/4  - 3*parent.spacing/4
+                width: gameScene.width/(parent.children.length) - (parent.children.length-1)*parent.spacing/parent.children.length
                 onClicked: {
                     currentLevel.nextLevel()
                     currentLevel.prevLevel()

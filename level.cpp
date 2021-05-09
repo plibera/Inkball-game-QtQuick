@@ -148,30 +148,6 @@ void Level::setObstacles(QList<bool> obstacles)
     emit obstaclesChanged();
 }
 
-void Level::setBalls(QList<BallInfo*> balls)
-{
-    if(m_balls == balls)
-        return;
-    m_balls = balls;
-    emit ballsChanged();
-}
-
-void Level::setGoals(QList<GoalInfo*> goals)
-{
-    if(m_goals == goals)
-        return;
-    m_goals = goals;
-    emit goalsChanged();
-}
-
-void Level::setSegments(QList<Segment*> segments)
-{
-    if(m_segments == segments)
-        return;
-    m_segments = segments;
-    emit segmentsChanged();
-}
-
 void Level::setLevelId(int levelId)
 {
     if(levelId == m_levelId)
@@ -193,14 +169,6 @@ void Level::setGridSize(QPair<int, int> gridSize)
     emit gridSizeChanged();
 }
 
-void Level::setActiveSegment(Segment* activeSegment)
-{
-    if(m_activeSegment == activeSegment)
-        return;
-    m_activeSegment = activeSegment;
-    emit activeSegmentChanged();
-}
-
 void Level::setSegmentStarted(bool segmentStarted)
 {
     if(m_segmentStarted == segmentStarted)
@@ -214,7 +182,19 @@ void Level::setGameState(int gameState)
     if(gameState == m_gameState)
         return;
     m_gameState = gameState;
+    if(gameState == 1)
+        gameTimer.start();
+    else
+        setGameTime(gameTimer.elapsed()/1000);
     emit gameStateChanged();
+}
+
+void Level::setGameTime(int gameTime)
+{
+    if(m_gameTime == gameTime)
+        return;
+    m_gameTime = gameTime;
+    emit gameTimeChanged();
 }
 
 void Level::nextLevel()
@@ -360,7 +340,6 @@ void Level::fromString(std::string levelInfo)
     m_goals.clear();
     m_balls.clear();
     m_segments.clear();
-    //scores.clear();
 
     stringstream ss;
     ss.str(levelInfo);
@@ -395,26 +374,6 @@ void Level::fromString(std::string levelInfo)
             }
         }
     }
-    /*for(int i = 0; i <= m_gridSize.first; ++i)
-    {
-        m_obstacles.push_back(QPair<int, int>(i, 0));
-        m_obstacles.push_back(QPair<int, int>(i, m_gridSize.second));
-    }
-    for(int i = 1; i < m_gridSize.second; ++i)
-    {
-        m_obstacles.push_back(QPair<int, int>(0, i));
-        m_obstacles.push_back(QPair<int, int>(m_gridSize.first, i));
-    }*/
-    for(int i = 0; i < m_obstacles.size(); ++i)
-    {
-        if(i%m_gridSize.first == 0)
-            cout<<endl;
-        if(m_obstacles[i])
-            cout<<"1";
-       else
-            cout<<"0";
-    }
-    cout<<endl;
 
     //ss>>source.first>>source.second;
     ss>>temp;
@@ -461,10 +420,3 @@ void Level::fromString(std::string levelInfo)
     setGameState(0);
     //sort(scores.begin(), scores.end());
 }
-
-/*void Level::addScore(int score)
-{
-    scores.push_back(score);
-    sort(scores.begin(), scores.end());
-}
-*/

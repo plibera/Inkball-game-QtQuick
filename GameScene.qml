@@ -9,6 +9,8 @@ Rectangle {
     height: width
     color: "#a0a0a0"
     property Level level
+    property double xOffset
+    property double yOffset
 
     //Obstacles
     Grid {
@@ -101,8 +103,8 @@ Rectangle {
             width: 3
             height: level.segments[index].length*gameScene.width/20
             transform: Rotation {
-                origin.x: parent.x
-                origin.y: parent.y
+                origin.x: 0
+                origin.y: 0
                 angle: -1*level.segments[index].angle - 90
             }
             color: "#505050"

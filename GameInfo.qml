@@ -14,6 +14,8 @@ Rectangle {
     radius: width/16
     border.width: active ? 5 : 0
     border.color: "black"
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.verticalCenter: parent.verticalCenter
     property bool active
     property string msg
     Text {
@@ -22,5 +24,6 @@ Rectangle {
         anchors.fill: parent
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
+        wrapMode: Text.WordWrap
     }
 }

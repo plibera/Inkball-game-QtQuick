@@ -8,6 +8,7 @@
 #include <QPointF>
 #include <qqml.h>
 #include <QLineF>
+#include <QElapsedTimer>
 
 #include "constants.h"
 
@@ -20,7 +21,6 @@ class BallInfo : public QObject
     QML_ELEMENT
 
     QPointF m_pos;
-    //QPointF m_dst;
     qreal m_angle;
     QColor m_color;
 
@@ -111,15 +111,15 @@ class Level : public QObject
     //Q_PROPERTY(QList<int> scores READ scores WRITE setScores NOTIFY scoredChanges)
     Q_PROPERTY(QList<bool> obstacles READ obstacles WRITE setObstacles NOTIFY obstaclesChanged)
     //Q_PROPERTY(QPair<int, int> source READ source WRITE setSource NOTIFY sourceChanged)
-    Q_PROPERTY(QList<GoalInfo*> goals READ goals WRITE setGoals NOTIFY goalsChanged)
-    Q_PROPERTY(QList<BallInfo*> balls READ balls WRITE setBalls NOTIFY ballsChanged)
-    Q_PROPERTY(Segment* activeSegment READ activeSegment WRITE setActiveSegment NOTIFY activeSegmentChanged)
+    Q_PROPERTY(QList<GoalInfo*> goals READ goals NOTIFY goalsChanged)
+    Q_PROPERTY(QList<BallInfo*> balls READ balls NOTIFY ballsChanged)
+    Q_PROPERTY(Segment* activeSegment READ activeSegment NOTIFY activeSegmentChanged)
     Q_PROPERTY(bool segmentStarted READ segmentStarted WRITE setSegmentStarted NOTIFY segmentStartedChanged)
-    Q_PROPERTY(QList<Segment*> segments READ segments WRITE setSegments NOTIFY segmentsChanged)
+    Q_PROPERTY(QList<Segment*> segments READ segments NOTIFY segmentsChanged)
     //0 - Idle; 1 - Playing; 2 - Game won; 3 - Game over
     Q_PROPERTY(int gameState READ gameState WRITE setGameState NOTIFY gameStateChanged)
+    Q_PROPERTY(int gameTime READ gameTime WRITE setGameTime NOTIFY gameTimeChanged)
 
-private:
     QList<bool> m_obstacles;
     QList<BallInfo*> m_balls;
     QList<GoalInfo*> m_goals;
@@ -130,6 +130,8 @@ private:
     bool m_segmentStarted;
     QStringList levels;
     int m_gameState;
+    int m_gameTime;
+    QElapsedTimer gameTimer;
 
 public:
 
@@ -147,17 +149,15 @@ public:
     bool segmentStarted() { return m_segmentStarted;}
     int levelId() {return m_levelId;}
     int gameState() { return m_gameState;}
+    int gameTime() { return m_gameTime;}
 
 public slots:
     void setObstacles(QList<bool> obstacles);
-    void setBalls(QList<BallInfo*> balls);
-    void setGoals(QList<GoalInfo*> goals);
-    void setSegments(QList<Segment*> segments);
     void setGridSize(QPair<int, int> gridSize);
-    void setActiveSegment(Segment* activeSegment);
     void setSegmentStarted(bool segmentStarted);
     void setLevelId(int levelId);
     void setGameState(int gameState);
+    void setGameTime(int gameTime);
     void updatePositions();
     void nextLevel();
     void prevLevel();
@@ -175,6 +175,7 @@ signals:
     void activeSegmentChanged();
     void segmentStartedChanged();
     void gameStateChanged();
+    void gameTimeChanged();
 };
 
 #endif // LEVEL_H
